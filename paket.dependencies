@@ -1,0 +1,6 @@
+storage: none
+source https://api.nuget.org/v3/index.json
+
+nuget FSharp.Core           ~> 7.0.0
+nuget BenchmarkDotNet       ~> 0.13.5
+nuget Perfolizer            ~> 0.2.1
