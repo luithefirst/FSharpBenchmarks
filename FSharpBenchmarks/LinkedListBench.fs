@@ -16,13 +16,19 @@
 //  [Host]     : .NET 7.0.5 (7.0.523.17405), X64 RyuJIT AVX2 DEBUG
 //  DefaultJob : .NET 7.0.5 (7.0.523.17405), X64 RyuJIT AVX2
 
-
+// 4 byte payload:
 //|     Method | Count |      Mean |    Error |   StdDev |   Gen0 |   Gen1 |   Gen2 | Allocated |
 //|----------- |------ |----------:|---------:|---------:|-------:|-------:|-------:|----------:|
 //|    OptList |  1000 | 136.18 us | 2.678 us | 3.188 us | 9.0332 | 6.1035 | 0.9766 |  54.69 KB |
 //| ValOptList |  1000 |  52.46 us | 0.860 us | 0.805 us | 4.5166 | 4.2114 | 0.1221 |  27.34 KB |
 //|    RefList |  1000 |  40.29 us | 0.507 us | 0.474 us | 3.2349 | 1.5869 | 0.0610 |  19.53 KB |
 
+// 32 byte payload:
+//|     Method | Count |      Mean |    Error |   StdDev |    Gen0 |   Gen1 |   Gen2 | Allocated |
+//|----------- |------ |----------:|---------:|---------:|--------:|-------:|-------:|----------:|
+//|    OptList |  1000 | 161.38 us | 3.192 us | 4.874 us | 11.4746 | 7.5684 | 1.4648 |  66.41 KB |
+//| ValOptList |  1000 |  69.53 us | 1.387 us | 1.484 us |  6.5918 | 5.7373 | 0.4883 |  39.06 KB |
+//|    RefList |  1000 |  49.64 us | 0.985 us | 1.412 us |  5.1880 | 4.6997 | 0.2441 |  31.25 KB |
 
 module LinkedListBench
     
@@ -188,17 +194,24 @@ module LinkedListBench
             else
                 n.Prev <- item.Prev
 
+    type Payload = // 32 byte
+        struct
+            val a : float
+            val b : float
+            val c : float
+            val d : float
+        end
 
     [<InProcess>] // results in crash with DisassemblyDiagnoser
     [<PlainExporter; MemoryDiagnoser>]
     //[<DisassemblyDiagnoser(5, BenchmarkDotNet.Diagnosers.DisassemblySyntax.Masm, true, true, true, true, true, true)>]
     //[<RyuJitX64Job>]
     type LinkedListBench() =
-        let mutable optList = LinkedListOpt<_>(5)
+        let mutable optList = LinkedListOpt<_>(Payload())
         let mutable optListItems = System.Collections.Generic.List<ListItemOpt<_>>(10000)
-        let mutable valOptList = LinkedListValOpt<_>(5)
+        let mutable valOptList = LinkedListValOpt<_>(Payload())
         let mutable valOptListItems = System.Collections.Generic.List<ListItemValOpt<_>>(10000)
-        let mutable refList = LinkedListRef<_>(5)
+        let mutable refList = LinkedListRef<_>(Payload())
         let mutable refListItems = System.Collections.Generic.List<ListItemRef<_>>(10000)
         let mutable rnd = Random(1)
 
@@ -208,7 +221,7 @@ module LinkedListBench
 
 
         member x.OptListAdd() =
-            let value = 5
+            let value = Payload()
             let idx = rnd.Next(optListItems.Count)
             let pos = optListItems.[idx]
             optListItems.Add(optList.AddBefore(value, pos))
@@ -225,7 +238,7 @@ module LinkedListBench
 
 
         member x.ValOptListAdd() =
-            let value = 5
+            let value = Payload()
             let idx = rnd.Next(valOptListItems.Count)
             let pos = valOptListItems.[idx]
             valOptListItems.Add(valOptList.AddBefore(value, pos))
@@ -242,7 +255,7 @@ module LinkedListBench
 
 
         member x.RefListAdd() =
-            let value = 5
+            let value = Payload()
             let idx = rnd.Next(refListItems.Count)
             let pos = refListItems.[idx]
             refListItems.Add(refList.AddBefore(value, pos))
