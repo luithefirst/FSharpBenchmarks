@@ -5,7 +5,7 @@
 //  -> for ValueOptions this would sound reasonable
 // 
 // Conclusion:
-//  - ValueOption<ReferenceType> still stores a "HasValue" separately
+//  - ValueOption<ReferenceType> still stores a "HasValue" separately (probably so that the reference can have a value and still be null, but without AllowNullLiteral this shoud not be normally possible)
 //  - Matching and updating ValueOptions does not run as fast as "pure" references
 //  - The implementation using references (pointers) with [<AllowNullLiteral>] is somehow slower than ValueOptions -> could not run the DisassemblyDiagnoser to investigate further
 
@@ -17,11 +17,11 @@
 //  DefaultJob : .NET 7.0.5 (7.0.523.17405), X64 RyuJIT AVX2
 
 
-//|     Method | Count |     Mean |     Error |    StdDev | Ratio | RatioSD | Code Size |   Gen0 |   Gen1 |   Gen2 | Allocated | Alloc Ratio |
-//|----------- |------ |---------:|----------:|----------:|------:|--------:|----------:|-------:|-------:|-------:|----------:|------------:|
-//|    OptList |   100 | 9.261 us | 0.4956 us | 1.4612 us |  1.00 |    0.00 |   1,721 B | 0.8850 | 0.8240 | 0.1526 |   5.47 KB |        1.00 |
-//| ValOptList |   100 | 6.239 us | 0.1234 us | 0.3377 us |  0.69 |    0.11 |   1,694 B | 0.4425 | 0.1755 | 0.0076 |   2.73 KB |        0.50 |
-//|    RefList |   100 | 5.378 us | 0.1075 us | 0.2596 us |  0.59 |    0.09 |   1,603 B | 0.3128 | 0.1068 | 0.0076 |   1.95 KB |        0.36 |
+//|     Method | Count |      Mean |    Error |   StdDev |   Gen0 |   Gen1 |   Gen2 | Allocated |
+//|----------- |------ |----------:|---------:|---------:|-------:|-------:|-------:|----------:|
+//|    OptList |  1000 | 136.18 us | 2.678 us | 3.188 us | 9.0332 | 6.1035 | 0.9766 |  54.69 KB |
+//| ValOptList |  1000 |  52.46 us | 0.860 us | 0.805 us | 4.5166 | 4.2114 | 0.1221 |  27.34 KB |
+//|    RefList |  1000 |  40.29 us | 0.507 us | 0.474 us | 3.2349 | 1.5869 | 0.0610 |  19.53 KB |
 
 
 module LinkedListBench
@@ -189,7 +189,7 @@ module LinkedListBench
                 n.Prev <- item.Prev
 
 
-    //[<InProcess>] // results in crash with DisassemblyDiagnoser
+    [<InProcess>] // results in crash with DisassemblyDiagnoser
     [<PlainExporter; MemoryDiagnoser>]
     //[<DisassemblyDiagnoser(5, BenchmarkDotNet.Diagnosers.DisassemblySyntax.Masm, true, true, true, true, true, true)>]
     //[<RyuJitX64Job>]
@@ -203,12 +203,12 @@ module LinkedListBench
         let mutable rnd = Random(1)
 
 
-        [<DefaultValue; Params(100)>]
+        [<DefaultValue; Params(1000)>]
         val mutable Count : int
 
 
         member x.OptListAdd() =
-            let value = rnd.Next()
+            let value = 5
             let idx = rnd.Next(optListItems.Count)
             let pos = optListItems.[idx]
             optListItems.Add(optList.AddBefore(value, pos))
@@ -225,7 +225,7 @@ module LinkedListBench
 
 
         member x.ValOptListAdd() =
-            let value = rnd.Next()
+            let value = 5
             let idx = rnd.Next(valOptListItems.Count)
             let pos = valOptListItems.[idx]
             valOptListItems.Add(valOptList.AddBefore(value, pos))
@@ -242,7 +242,7 @@ module LinkedListBench
 
 
         member x.RefListAdd() =
-            let value = rnd.Next()
+            let value = 5
             let idx = rnd.Next(refListItems.Count)
             let pos = refListItems.[idx]
             refListItems.Add(refList.AddBefore(value, pos))
@@ -263,7 +263,7 @@ module LinkedListBench
             optListItems.Add(optList.Head.Value)
             valOptListItems.Add(valOptList.Head.Value)
             refListItems.Add(refList.Head)
-            for i in 1..100 do
+            for i in 1..9999 do
                 x.OptListAdd()
                 x.ValOptListAdd()
                 x.RefListAdd()
@@ -272,7 +272,7 @@ module LinkedListBench
         [<Benchmark>]
         member x.OptList() =
             for i in 1..x.Count do
-                if optListItems.Count < 10000 && (rnd.Next(2) = 0) then
+                if (i &&& 0x1) = 0 then
                     x.OptListAdd()
                 else
                     x.OptListRemove()
@@ -280,7 +280,7 @@ module LinkedListBench
         [<Benchmark>]
         member x.ValOptList() =
             for i in 1..x.Count do
-                if valOptListItems.Count < 10000 && (rnd.Next(2) = 0) then
+                if (i &&& 0x1) = 0 then
                     x.ValOptListAdd()
                 else
                     x.ValOptListRemove()
@@ -288,7 +288,7 @@ module LinkedListBench
         [<Benchmark>]
         member x.RefList() =
             for i in 1..x.Count do
-                if refListItems.Count < 10000 && (rnd.Next(2) = 0) then
+                if (i &&& 0x1) = 0 then
                     x.RefListAdd()
                 else
                     x.RefListRemove()
