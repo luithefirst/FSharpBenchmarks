@@ -5,7 +5,7 @@
 //  -> for ValueOptions this would sound reasonable
 // 
 // Conclusion:
-//  - ValueOption<ReferenceType> still stores a "HasValue" separately (probably so that the reference can have a value and still be null, but without AllowNullLiteral this shoud not be normally possible)
+//  - ValueOption<ReferenceType> still stores a "HasValue" separately (probably so that the option can have a value of null, but without AllowNullLiteral this shoud not be normally possible)
 //  - Matching and updating ValueOptions does not run as fast as "pure" references
 //  - The implementation using references (pointers) with [<AllowNullLiteral>] is somehow slower than ValueOptions -> could not run the DisassemblyDiagnoser to investigate further
 
@@ -29,6 +29,21 @@
 //|    OptList |  1000 | 161.38 us | 3.192 us | 4.874 us | 11.4746 | 7.5684 | 1.4648 |  66.41 KB |
 //| ValOptList |  1000 |  69.53 us | 1.387 us | 1.484 us |  6.5918 | 5.7373 | 0.4883 |  39.06 KB |
 //|    RefList |  1000 |  49.64 us | 0.985 us | 1.412 us |  5.1880 | 4.6997 | 0.2441 |  31.25 KB |
+
+
+// Revisited with net 8.0:
+//BenchmarkDotNet=v0.13.5, OS=Windows 10 (10.0.19045.4291/22H2/2022Update)
+//Intel Core i7-8700K CPU 3.70GHz (Coffee Lake), 1 CPU, 12 logical and 6 physical cores
+//.NET SDK=8.0.204
+//  [Host] : .NET 8.0.4 (8.0.424.16909), X64 RyuJIT AVX2 DEBUG
+
+//Job=InProcess  Toolchain=InProcessEmitToolchain
+
+//|     Method | Count |      Mean |    Error |   StdDev |    Gen0 |   Gen1 |   Gen2 | Allocated |
+//|----------- |------ |----------:|---------:|---------:|--------:|-------:|-------:|----------:|
+//|    OptList |  1000 | 154.18 us | 2.990 us | 3.070 us | 11.4746 | 7.3242 | 1.4648 |  66.41 KB |
+//| ValOptList |  1000 |  70.96 us | 1.280 us | 1.135 us |  6.5918 | 5.6152 | 0.4883 |  39.06 KB |
+//|    RefList |  1000 |  43.94 us | 0.878 us | 1.172 us |  5.1880 | 4.8828 | 0.2441 |  31.25 KB |
 
 module LinkedListBench
     
